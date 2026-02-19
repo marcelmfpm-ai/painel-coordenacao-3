@@ -1411,32 +1411,30 @@
             eventNotes = JSON.parse(savedNotes);
         }
 
-        // ✅ AUTO-CARREGAR escalas.csv DO REPOSITÓRIO AO ABRIR O PAINEL
-window.addEventListener('DOMContentLoaded', function () {
-    const status = document.getElementById('fileStatus');
-    if (status) {
-        status.innerHTML = `<span class="font-semibold">Carregando escalas.csv automaticamente...</span>`;
-    }
+       // ✅ AUTO-CARREGAR escalas.csv (robusto p/ GitHub Pages + sem cache)
+window.addEventListener('DOMContentLoaded', async () => {
+  const status = document.getElementById('fileStatus');
 
-    fetch('./escalas.csv', { cache: 'no-store' })
-        .then(resp => {
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            return resp.text();
-        })
-        .then(csvText => {
-            processCSV(csvText); // ✅ chama o mesmo fluxo do upload manual
-            if (status) {
-                status.innerHTML = `<span class="font-semibold text-green-700">✅ escalas.csv carregado automaticamente</span>`;
-            }
-        })
-        .catch(err => {
-            console.error('Erro ao carregar escalas.csv:', err);
-            if (status) {
-                status.innerHTML = `<span class="font-semibold text-red-700">❌ Não foi possível carregar escalas.csv automaticamente</span>`;
-            }
-        });
+  const csvUrl = new URL('escalas.csv', window.location.href);
+  csvUrl.searchParams.set('v', Date.now()); // anti-cache
+
+  try {
+    if (status) status.innerHTML = `<span class="font-semibold">Carregando escalas.csv automaticamente...</span>`;
+
+    console.log('Tentando carregar CSV em:', csvUrl.toString());
+
+    const resp = await fetch(csvUrl.toString(), { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const csvText = await resp.text();
+    processCSV(csvText);
+
+    if (status) status.innerHTML = `<span class="font-semibold text-green-700">✅ escalas.csv carregado automaticamente</span>`;
+  } catch (err) {
+    console.error('Erro ao carregar escalas.csv:', err);
+    if (status) status.innerHTML = `<span class="font-semibold text-red-700">❌ Não foi possível carregar escalas.csv automaticamente</span>`;
+  }
 });
-
         
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
